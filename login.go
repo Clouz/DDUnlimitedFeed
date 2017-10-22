@@ -15,6 +15,18 @@ import (
 
 var client http.Client
 
+// Serie rappresenta una collezione di link
+type Serie struct {
+	Titolo  string
+	Puntate []Puntata
+}
+
+//Puntata rappresenta la singola puntata
+type Puntata struct {
+	Link   string
+	Titolo string
+}
+
 // Login effettua il login sul sito e ne salva la SID
 func Login(conf *Configuration) {
 	site := conf.LoginURL
@@ -44,6 +56,7 @@ func GetEd2k(link string) {
 	resp, _ := client.Get(link)
 
 	println(printTitle(resp.Body))
+	printEd2k(resp.Body)
 
 }
 
@@ -71,4 +84,40 @@ func printTitle(r io.Reader) string {
 			}
 		}
 	}
+}
+
+func printEd2k(r io.Reader) Serie {
+	z := html.NewTokenizer(r)
+
+	var serie Serie
+
+	for {
+		tt := z.Next()
+		switch tt {
+		case html.ErrorToken:
+			break
+		case html.StartTagToken, html.EndTagToken:
+			tag, a := z.TagName()
+
+			if string(tag) == "title" {
+				z.Next()
+				serie.Titolo = string(z.Text())
+			}
+
+			if string(tag) == "a" && a {
+				keyHref, valHref, nextHref := z.TagAttr()
+				if string(keyHref) == "href" && nextHref {
+					keyTitle, valTitle, _ := z.TagAttr()
+					if string(keyTitle) == "title" && string(valTitle) == "Aggiungi a Emule" {
+						z.Next()
+						print(string(z.Text()))
+						println("; Link: ", string(valHref))
+					}
+				}
+			}
+		}
+
+	}
+
+	return serie
 }
