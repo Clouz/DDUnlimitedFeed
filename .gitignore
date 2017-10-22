@@ -4,6 +4,7 @@
 *.so
 *.dylib
 debug
+DDUnlimitedFeed
 
 
 # Test binary, build with `go test -c`
