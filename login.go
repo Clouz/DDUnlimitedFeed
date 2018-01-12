@@ -55,7 +55,10 @@ func Login(conf *Configuration) {
 func GetEd2k(link string) {
 	resp, _ := client.Get(link)
 
+	println("#PrintTile")
 	println(printTitle(resp.Body))
+
+	println("#PrintEd2k")
 	printEd2k(resp.Body)
 
 }
@@ -76,6 +79,8 @@ func printTitle(r io.Reader) string {
 	for {
 		tt := z.Next()
 		switch tt {
+		case html.ErrorToken:
+			return z.Err().Error()
 		case html.StartTagToken, html.EndTagToken:
 			tag, _ := z.TagName()
 			if string(tag) == "title" {
@@ -86,7 +91,7 @@ func printTitle(r io.Reader) string {
 	}
 }
 
-func printEd2k(r io.Reader) Serie {
+func printEd2k(r io.Reader) (Serie, error) {
 	z := html.NewTokenizer(r)
 
 	var serie Serie
@@ -95,29 +100,27 @@ func printEd2k(r io.Reader) Serie {
 		tt := z.Next()
 		switch tt {
 		case html.ErrorToken:
-			break
+			return serie, z.Err()
 		case html.StartTagToken, html.EndTagToken:
-			tag, a := z.TagName()
+			tag, attribute := z.TagName()
 
 			if string(tag) == "title" {
 				z.Next()
 				serie.Titolo = string(z.Text())
 			}
 
-			if string(tag) == "a" && a {
+			if string(tag) == "a" && attribute {
 				keyHref, valHref, nextHref := z.TagAttr()
+
 				if string(keyHref) == "href" && nextHref {
 					keyTitle, valTitle, _ := z.TagAttr()
 					if string(keyTitle) == "title" && string(valTitle) == "Aggiungi a Emule" {
 						z.Next()
-						print(string(z.Text()))
+						println(string(z.Text()))
 						println("; Link: ", string(valHref))
 					}
 				}
 			}
 		}
-
 	}
-
-	return serie
 }
